@@ -197,10 +197,10 @@ export default function ItemsPage() {
                                                 )}
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                ${item.cost_price.toFixed(2)}
+                                                PKR {item.cost_price.toFixed(2)}
                                             </TableCell>
                                             <TableCell className="text-right font-medium">
-                                                ${item.unit_price.toFixed(2)}
+                                                PKR {item.unit_price.toFixed(2)}
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex items-center justify-end gap-2">
