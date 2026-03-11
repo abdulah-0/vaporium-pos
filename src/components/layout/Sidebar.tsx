@@ -16,6 +16,7 @@ import {
     Award,
     FileText,
     Zap,
+    Settings2,
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -38,6 +39,7 @@ export function Sidebar({ tenantSlug }: SidebarProps) {
         { name: 'Suppliers', href: `${baseUrl}/suppliers`, icon: Truck, group: 'people' },
         { name: 'Employees', href: `${baseUrl}/employees`, icon: UserCog, group: 'people' },
         { name: 'Reports', href: `${baseUrl}/reports`, icon: BarChart3, group: 'reports' },
+        { name: 'Settings', href: `${baseUrl}/settings`, icon: Settings2, group: 'reports' },
     ]
 
     const groups = [
