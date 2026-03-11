@@ -83,6 +83,14 @@ export default function SalesPage() {
         if (searchQuery.trim()) setShowSearchDialog(true)
     }
 
+    // Auto-open dialog as user types
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value)
+        if (value.trim().length >= 1) {
+            setShowSearchDialog(true)
+        }
+    }
+
     const handleSelectItem = (item: any) => {
         const cartItem: CartItem = {
             item_id: item.id,
@@ -103,6 +111,7 @@ export default function SalesPage() {
         }
         addItem(cartItem)
         setSearchQuery('')
+        setShowSearchDialog(false)
     }
 
     const handleCompletePayment = async (payments: Payment[]) => {
@@ -144,7 +153,7 @@ export default function SalesPage() {
                                     ref={searchInputRef}
                                     placeholder="Search by name, barcode, or item number... (F2)"
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onChange={(e) => handleSearchChange(e.target.value)}
                                     onKeyDown={(e) => { if (e.key === 'Enter') handleSearch() }}
                                     className="pl-9 h-11 bg-gray-50 border-gray-200 focus:border-purple-400 transition-all"
                                 />
@@ -163,9 +172,13 @@ export default function SalesPage() {
                 {/* Item Search Dialog */}
                 <ItemSearchDialog
                     open={showSearchDialog}
-                    onOpenChange={setShowSearchDialog}
+                    onOpenChange={(open) => {
+                        setShowSearchDialog(open)
+                        if (!open) setSearchQuery('')
+                    }}
                     onSelectItem={handleSelectItem}
                     tenantId={tenantId}
+                    initialQuery={searchQuery}
                 />
 
                 {/* Cart Items */}

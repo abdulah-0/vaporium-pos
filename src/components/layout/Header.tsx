@@ -72,11 +72,6 @@ export function Header({ user, tenant }: HeaderProps) {
                         <div className="flex items-center gap-1.5">
                             <Building2 className="h-4 w-4 text-gray-400" />
                             <span className="font-medium text-gray-900">{tenant.name}</span>
-                            {tenant.subscription_status === 'trial' && (
-                                <span className="ml-1 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 px-2 py-0.5 text-[10px] font-semibold text-white uppercase tracking-wide">
-                                    Trial
-                                </span>
-                            )}
                         </div>
                         {pageLabel && (
                             <>

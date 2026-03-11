@@ -31,6 +31,7 @@ interface ItemSearchDialogProps {
     onOpenChange: (open: boolean) => void
     onSelectItem: (item: ItemWithStock) => void
     tenantId: string
+    initialQuery?: string
 }
 
 export default function ItemSearchDialog({
@@ -38,8 +39,19 @@ export default function ItemSearchDialog({
     onOpenChange,
     onSelectItem,
     tenantId,
+    initialQuery = '',
 }: ItemSearchDialogProps) {
     const [searchQuery, setSearchQuery] = useState('')
+
+    // Seed dialog search with the query already typed in the POS search bar
+    useEffect(() => {
+        if (open) {
+            setSearchQuery(initialQuery)
+        } else {
+            setSearchQuery('')
+            setItems([])
+        }
+    }, [open, initialQuery])
     const [items, setItems] = useState<ItemWithStock[]>([])
     const [loading, setLoading] = useState(false)
     const [selectedIndex, setSelectedIndex] = useState(0)
