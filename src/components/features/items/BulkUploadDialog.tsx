@@ -52,22 +52,41 @@ function downloadTemplate() {
 function parseExcel(buffer: ArrayBuffer): ParsedRow[] {
     const wb = XLSX.read(buffer, { type: 'array' })
     const ws = wb.Sheets[wb.SheetNames[0]]
-    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: '' })
+    const data = XLSX.utils.sheet_to_json<Record<string, any>>(ws, { defval: '' })
 
-    return rows.map((row, idx) => {
-        const name = String(row['name'] || '').trim()
-        const category = String(row['category'] || '').trim()
-        const item_number = String(row['item_number'] || '').trim()
-        const description = String(row['description'] || '').trim()
-        const cost_price = parseFloat(String(row['cost_price'] || '0')) || 0
-        const unit_price = parseFloat(String(row['unit_price'] || '0')) || 0
-        const reorder_level = parseInt(String(row['reorder_level'] || '0')) || 0
+    return data.map((row, idx) => {
+        // Normalize keys to lowercase for easier matching
+        const normalizedRow: Record<string, any> = {}
+        Object.keys(row).forEach(key => {
+            const normalizedKey = key.toLowerCase().replace(/\s+/g, '_')
+            normalizedRow[normalizedKey] = row[key]
+        })
+
+        const getValue = (keys: string[]) => {
+            for (const key of keys) {
+                if (normalizedRow[key] !== undefined && normalizedRow[key] !== '') {
+                    return normalizedRow[key]
+                }
+            }
+            return ''
+        }
+
+        const name = String(getValue(['name', 'item_name', 'product_name'])).trim()
+        const category = String(getValue(['category', 'type', 'group'])).trim()
+        const item_number = String(getValue(['item_number', 'sku', 'barcode', 'code'])).trim()
+        const description = String(getValue(['description', 'desc', 'details'])).trim()
+
+        const cost_price = parseFloat(String(getValue(['cost_price', 'cost', 'purchase_price']) || '0')) || 0
+        const unit_price = parseFloat(String(getValue(['unit_price', 'price', 'sale_price']) || '0')) || 0
+        const reorder_level = parseInt(String(getValue(['reorder_level', 'reorder', 'min_stock']) || '0')) || 0
 
         if (!name) {
             return { name: '', category, item_number, description, cost_price, unit_price, reorder_level, error: `Row ${idx + 2}: Name is required` }
         }
-        if (unit_price <= 0) {
-            return { name, category, item_number, description, cost_price, unit_price, reorder_level, error: `Row ${idx + 2}: Unit price must be > 0` }
+
+        // Ensure unit_price is valid to prevent 500
+        if (isNaN(unit_price) || unit_price < 0) {
+            return { name, category, item_number, description, cost_price, unit_price: 0, reorder_level, error: `Row ${idx + 2}: Invalid unit price` }
         }
 
         return { name, category, item_number, description, cost_price, unit_price, reorder_level }
