@@ -122,30 +122,53 @@ export default function BulkUploadDialog({ open, onOpenChange, tenantId, onUploa
 
     const handleUpload = async () => {
         if (validRows.length === 0) return
+        if (!tenantId) {
+            showToast('error', 'Store information not loaded. Please refresh the page.')
+            return
+        }
+
         setUploading(true)
 
         try {
             const supabase = createClient()
-            const inserts = validRows.map((row) => ({
+
+            // Deduplicate by item_number in this batch to prevent Postgres internal collision issues
+            const uniqueByNumber = new Map()
+            validRows.forEach(row => {
+                const num = row.item_number || `ITEM-${Date.now()}-${Math.floor(Math.random() * 100000)}`
+                uniqueByNumber.set(num, { ...row, item_number: num })
+            })
+
+            const inserts = Array.from(uniqueByNumber.values()).map((row) => ({
                 tenant_id: tenantId,
                 name: row.name,
-                category: row.category,
-                item_number: row.item_number || `ITEM-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-                description: row.description,
-                cost_price: row.cost_price,
-                unit_price: row.unit_price,
-                reorder_level: row.reorder_level,
+                category: row.category || null,
+                item_number: row.item_number,
+                description: row.description || null,
+                cost_price: Number(row.cost_price) || 0,
+                unit_price: Number(row.unit_price) || 0,
+                reorder_level: Math.floor(Number(row.reorder_level)) || 0,
                 allow_alt_description: false,
                 is_serialized: false,
                 deleted: false,
             }))
+
+            console.log('Bulk Uploading:', inserts.length, 'items for tenant:', tenantId)
 
             // Use upsert on item_number to avoid unique constraint violations
             const { error } = await supabase
                 .from('items')
                 .upsert(inserts, { onConflict: 'item_number' })
 
-            if (error) throw error
+            if (error) {
+                console.error('Supabase Bulk Upload Error Details:', {
+                    message: error.message,
+                    details: error.details,
+                    hint: error.hint,
+                    code: error.code
+                })
+                throw error
+            }
 
             setUploadResult({ success: validRows.length, failed: errorRows.length })
             showToast('success', `${validRows.length} item(s) uploaded successfully!`)
