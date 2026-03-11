@@ -18,28 +18,38 @@ import {
     Zap,
     Settings2,
 } from 'lucide-react'
+import type { RoleName } from '@/lib/roleUtils'
 
 interface SidebarProps {
     tenantSlug?: string
+    roleName?: RoleName
 }
 
-export function Sidebar({ tenantSlug }: SidebarProps) {
+interface NavItem {
+    name: string
+    href: string
+    icon: React.ElementType
+    group: string
+    roles: RoleName[]
+}
+
+export function Sidebar({ tenantSlug, roleName = 'Cashier' }: SidebarProps) {
     const pathname = usePathname()
     const baseUrl = tenantSlug ? `/${tenantSlug}` : ''
 
-    const navigation = [
-        { name: 'Dashboard', href: `${baseUrl}/dashboard`, icon: LayoutDashboard, group: 'main' },
-        { name: 'POS Register', href: `${baseUrl}/sales`, icon: ShoppingCart, group: 'main' },
-        { name: 'Sales History', href: `${baseUrl}/sales-history`, icon: FileText, group: 'main' },
-        { name: 'Items', href: `${baseUrl}/items`, icon: Package, group: 'inventory' },
-        { name: 'Receiving', href: `${baseUrl}/receiving`, icon: Package2, group: 'inventory' },
-        { name: 'Locations', href: `${baseUrl}/locations`, icon: MapPin, group: 'inventory' },
-        { name: 'Customers', href: `${baseUrl}/customers`, icon: Users, group: 'people' },
-        { name: 'Loyalty', href: `${baseUrl}/loyalty`, icon: Award, group: 'people' },
-        { name: 'Suppliers', href: `${baseUrl}/suppliers`, icon: Truck, group: 'people' },
-        { name: 'Employees', href: `${baseUrl}/employees`, icon: UserCog, group: 'people' },
-        { name: 'Reports', href: `${baseUrl}/reports`, icon: BarChart3, group: 'reports' },
-        { name: 'Settings', href: `${baseUrl}/settings`, icon: Settings2, group: 'reports' },
+    const navigation: NavItem[] = [
+        { name: 'Dashboard', href: `${baseUrl}/dashboard`, icon: LayoutDashboard, group: 'main', roles: ['Admin', 'Manager'] },
+        { name: 'POS Register', href: `${baseUrl}/sales`, icon: ShoppingCart, group: 'main', roles: ['Admin', 'Manager', 'Cashier'] },
+        { name: 'Sales History', href: `${baseUrl}/sales-history`, icon: FileText, group: 'main', roles: ['Admin', 'Manager', 'Cashier'] },
+        { name: 'Items', href: `${baseUrl}/items`, icon: Package, group: 'inventory', roles: ['Admin', 'Manager'] },
+        { name: 'Receiving', href: `${baseUrl}/receiving`, icon: Package2, group: 'inventory', roles: ['Admin', 'Manager'] },
+        { name: 'Locations', href: `${baseUrl}/locations`, icon: MapPin, group: 'inventory', roles: ['Admin', 'Manager'] },
+        { name: 'Customers', href: `${baseUrl}/customers`, icon: Users, group: 'people', roles: ['Admin', 'Manager', 'Cashier'] },
+        { name: 'Loyalty', href: `${baseUrl}/loyalty`, icon: Award, group: 'people', roles: ['Admin', 'Manager'] },
+        { name: 'Suppliers', href: `${baseUrl}/suppliers`, icon: Truck, group: 'people', roles: ['Admin'] },
+        { name: 'Employees', href: `${baseUrl}/employees`, icon: UserCog, group: 'people', roles: ['Admin'] },
+        { name: 'Reports', href: `${baseUrl}/reports`, icon: BarChart3, group: 'reports', roles: ['Admin', 'Manager'] },
+        { name: 'Settings', href: `${baseUrl}/settings`, icon: Settings2, group: 'reports', roles: ['Admin'] },
     ]
 
     const groups = [
@@ -48,6 +58,9 @@ export function Sidebar({ tenantSlug }: SidebarProps) {
         { key: 'people', label: 'People' },
         { key: 'reports', label: 'Analytics' },
     ]
+
+    // Filter nav by the current user's role
+    const allowedNav = navigation.filter(item => item.roles.includes(roleName))
 
     return (
         <div className="flex h-full w-64 flex-col" style={{
@@ -67,10 +80,24 @@ export function Sidebar({ tenantSlug }: SidebarProps) {
                 </div>
             </div>
 
+            {/* Role badge */}
+            <div className="px-5 py-2 border-b border-white/5">
+                <span className={cn(
+                    'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider',
+                    roleName === 'Admin' && 'bg-purple-500/20 text-purple-300',
+                    roleName === 'Manager' && 'bg-blue-500/20 text-blue-300',
+                    roleName === 'Cashier' && 'bg-green-500/20 text-green-300',
+                    !['Admin', 'Manager', 'Cashier'].includes(roleName) && 'bg-gray-500/20 text-gray-300',
+                )}>
+                    {roleName}
+                </span>
+            </div>
+
             {/* Navigation */}
             <nav className="flex-1 overflow-y-auto py-4 px-3">
                 {groups.map((group) => {
-                    const groupItems = navigation.filter(item => item.group === group.key)
+                    const groupItems = allowedNav.filter(item => item.group === group.key)
+                    if (groupItems.length === 0) return null
                     return (
                         <div key={group.key} className="mb-5">
                             <p className="mb-1.5 px-3 text-[10px] font-semibold tracking-widest uppercase text-purple-400/70">
