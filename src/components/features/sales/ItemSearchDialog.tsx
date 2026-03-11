@@ -42,6 +42,9 @@ export default function ItemSearchDialog({
     initialQuery = '',
 }: ItemSearchDialogProps) {
     const [searchQuery, setSearchQuery] = useState('')
+    const [items, setItems] = useState<ItemWithStock[]>([])
+    const [loading, setLoading] = useState(false)
+    const [selectedIndex, setSelectedIndex] = useState(0)
 
     // Seed dialog search with the query already typed in the POS search bar
     useEffect(() => {
@@ -52,9 +55,6 @@ export default function ItemSearchDialog({
             setItems([])
         }
     }, [open, initialQuery])
-    const [items, setItems] = useState<ItemWithStock[]>([])
-    const [loading, setLoading] = useState(false)
-    const [selectedIndex, setSelectedIndex] = useState(0)
 
     const searchItems = useCallback(async (query: string) => {
         if (!query.trim() || !tenantId) {
