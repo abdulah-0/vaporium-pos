@@ -105,7 +105,7 @@ export default function BulkUploadDialog({ open, onOpenChange, tenantId, onUploa
     const validRows = parsedRows.filter((r) => !r.error)
     const errorRows = parsedRows.filter((r) => r.error)
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (e: { target: HTMLInputElement }) => {
         const file = e.target.files?.[0]
         if (!file) return
         setFileName(file.name)
