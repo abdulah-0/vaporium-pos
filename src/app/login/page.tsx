@@ -155,11 +155,8 @@ export default function LoginPage() {
                             </Button>
                         </form>
 
-                        <div className="text-center text-sm text-gray-500">
-                            Don&apos;t have an account?{' '}
-                            <a href="/signup" className="font-semibold text-purple-600 hover:text-purple-700 transition-colors">
-                                Start free trial
-                            </a>
+                        <div className="text-center text-xs text-gray-400">
+                            Contact your administrator to get access.
                         </div>
                     </div>
                 </div>
