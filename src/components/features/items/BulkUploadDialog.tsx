@@ -111,18 +111,21 @@ export default function BulkUploadDialog({ open, onOpenChange, tenantId, onUploa
                 tenant_id: tenantId,
                 name: row.name,
                 category: row.category,
-                item_number: row.item_number,
+                item_number: row.item_number || `ITEM-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
                 description: row.description,
                 cost_price: row.cost_price,
                 unit_price: row.unit_price,
                 reorder_level: row.reorder_level,
-                receiving_quantity: 1,
                 allow_alt_description: false,
                 is_serialized: false,
                 deleted: false,
             }))
 
-            const { error } = await supabase.from('items').insert(inserts)
+            // Use upsert on item_number to avoid unique constraint violations
+            const { error } = await supabase
+                .from('items')
+                .upsert(inserts, { onConflict: 'item_number' })
+
             if (error) throw error
 
             setUploadResult({ success: validRows.length, failed: errorRows.length })
