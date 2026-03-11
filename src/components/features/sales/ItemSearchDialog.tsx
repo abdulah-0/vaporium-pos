@@ -133,11 +133,11 @@ export default function ItemSearchDialog({
             switch (e.key) {
                 case 'ArrowDown':
                     e.preventDefault()
-                    setSelectedIndex((prev) => Math.min(prev + 1, items.length - 1))
+                    setSelectedIndex((prev: number) => Math.min(prev + 1, items.length - 1))
                     break
                 case 'ArrowUp':
                     e.preventDefault()
-                    setSelectedIndex((prev) => Math.max(prev - 1, 0))
+                    setSelectedIndex((prev: number) => Math.max(prev - 1, 0))
                     break
                 case 'Enter':
                     e.preventDefault()
