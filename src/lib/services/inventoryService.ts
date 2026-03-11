@@ -176,11 +176,15 @@ export async function getStockLevel(itemId: number, locationId: number): Promise
 }
 
 /**
- * Get inventory transactions for an item
+ * Get all inventory transactions for a tenant
  */
-export async function getInventoryTransactions(
-    itemId: number,
-    dateRange?: { from: Date; to: Date }
+export async function getAllInventoryTransactions(
+    tenantId: string,
+    filters?: {
+        itemId?: number
+        locationId?: number
+        dateRange?: { from: Date; to: Date }
+    }
 ): Promise<any[]> {
     const supabase = createClient()
 
@@ -189,16 +193,25 @@ export async function getInventoryTransactions(
             .from('inventory_transactions')
             .select(`
                 *,
-                user:users(email),
+                item:items(name, item_number),
+                user:employees(
+                    person:people(first_name, last_name)
+                ),
                 location:stock_locations(location_name)
             `)
-            .eq('item_id', itemId)
+            .eq('tenant_id', tenantId)
             .order('trans_date', { ascending: false })
 
-        if (dateRange) {
+        if (filters?.itemId) {
+            query = query.eq('item_id', filters.itemId)
+        }
+        if (filters?.locationId) {
+            query = query.eq('location_id', filters.locationId)
+        }
+        if (filters?.dateRange) {
             query = query
-                .gte('trans_date', dateRange.from.toISOString())
-                .lte('trans_date', dateRange.to.toISOString())
+                .gte('trans_date', filters.dateRange.from.toISOString())
+                .lte('trans_date', filters.dateRange.to.toISOString())
         }
 
         const { data, error } = await query
@@ -206,7 +219,7 @@ export async function getInventoryTransactions(
         if (error) throw error
         return data || []
     } catch (error) {
-        console.error('Error getting inventory transactions:', error)
+        console.error('Error getting all inventory transactions:', error)
         return []
     }
 }

@@ -206,20 +206,24 @@ export default function ReceivingFormDialog({
                                         <TableRow>
                                             <TableHead>Item</TableHead>
                                             <TableHead>Location</TableHead>
-                                            <TableHead>Qty</TableHead>
-                                            <TableHead>Cost</TableHead>
-                                            <TableHead>Price</TableHead>
-                                            <TableHead>Disc%</TableHead>
-                                            <TableHead>Total</TableHead>
+                                            <TableHead className="text-right">Current</TableHead>
+                                            <TableHead className="text-right">Qty</TableHead>
+                                            <TableHead className="text-right">Cost</TableHead>
+                                            <TableHead className="text-right">Price</TableHead>
+                                            <TableHead className="text-right">Total</TableHead>
+                                            <TableHead className="text-right">New Stock</TableHead>
                                             <TableHead></TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {fields.map((field, index) => {
                                             const item = receivingItems[index]
+                                            const selectedItem = items.find(i => i.id === item.item_id)
                                             const itemTotal = item.item_unit_price * item.quantity_purchased
                                             const discount = itemTotal * (item.discount_percent / 100)
                                             const total = itemTotal - discount
+                                            const currentStock = selectedItem?.stock_quantity || 0
+                                            const newStock = currentStock + (item.quantity_purchased || 0)
 
                                             return (
                                                 <TableRow key={field.id}>
@@ -227,21 +231,21 @@ export default function ReceivingFormDialog({
                                                         <Select
                                                             value={item.item_id?.toString()}
                                                             onValueChange={(value) => {
-                                                                const selectedItem = items.find(i => i.id === parseInt(value))
+                                                                const sItem = items.find(i => i.id === parseInt(value))
                                                                 setValue(`items.${index}.item_id`, parseInt(value))
-                                                                if (selectedItem) {
-                                                                    setValue(`items.${index}.item_cost_price`, selectedItem.cost_price)
-                                                                    setValue(`items.${index}.item_unit_price`, selectedItem.unit_price)
+                                                                if (sItem) {
+                                                                    setValue(`items.${index}.item_cost_price`, sItem.cost_price)
+                                                                    setValue(`items.${index}.item_unit_price`, sItem.unit_price)
                                                                 }
                                                             }}
                                                         >
-                                                            <SelectTrigger className="w-[200px]">
+                                                            <SelectTrigger className="w-[180px]">
                                                                 <SelectValue placeholder="Select item" />
                                                             </SelectTrigger>
                                                             <SelectContent>
-                                                                {items.map((item) => (
-                                                                    <SelectItem key={item.id} value={item.id.toString()}>
-                                                                        {item.name}
+                                                                {items.map((i) => (
+                                                                    <SelectItem key={i.id} value={i.id.toString()}>
+                                                                        {i.name}
                                                                     </SelectItem>
                                                                 ))}
                                                             </SelectContent>
@@ -252,7 +256,7 @@ export default function ReceivingFormDialog({
                                                             value={item.item_location?.toString()}
                                                             onValueChange={(value) => setValue(`items.${index}.item_location`, parseInt(value))}
                                                         >
-                                                            <SelectTrigger className="w-[120px]">
+                                                            <SelectTrigger className="w-[110px]">
                                                                 <SelectValue />
                                                             </SelectTrigger>
                                                             <SelectContent>
@@ -264,10 +268,13 @@ export default function ReceivingFormDialog({
                                                             </SelectContent>
                                                         </Select>
                                                     </TableCell>
+                                                    <TableCell className="text-right font-mono text-gray-500">
+                                                        {currentStock}
+                                                    </TableCell>
                                                     <TableCell>
                                                         <Input
                                                             type="number"
-                                                            className="w-20"
+                                                            className="w-16 text-right"
                                                             {...register(`items.${index}.quantity_purchased`, { valueAsNumber: true })}
                                                         />
                                                     </TableCell>
@@ -275,7 +282,7 @@ export default function ReceivingFormDialog({
                                                         <Input
                                                             type="number"
                                                             step="0.01"
-                                                            className="w-24"
+                                                            className="w-20 text-right"
                                                             {...register(`items.${index}.item_cost_price`, { valueAsNumber: true })}
                                                         />
                                                     </TableCell>
@@ -283,20 +290,15 @@ export default function ReceivingFormDialog({
                                                         <Input
                                                             type="number"
                                                             step="0.01"
-                                                            className="w-24"
+                                                            className="w-20 text-right"
                                                             {...register(`items.${index}.item_unit_price`, { valueAsNumber: true })}
                                                         />
                                                     </TableCell>
-                                                    <TableCell>
-                                                        <Input
-                                                            type="number"
-                                                            step="0.01"
-                                                            className="w-20"
-                                                            {...register(`items.${index}.discount_percent`, { valueAsNumber: true })}
-                                                        />
+                                                    <TableCell className="text-right font-medium">
+                                                        {total.toLocaleString()}
                                                     </TableCell>
-                                                    <TableCell className="font-medium">
-                                                        ${total.toFixed(2)}
+                                                    <TableCell className="text-right font-bold text-blue-600">
+                                                        {newStock}
                                                     </TableCell>
                                                     <TableCell>
                                                         <Button
@@ -317,9 +319,9 @@ export default function ReceivingFormDialog({
                         )}
 
                         {fields.length > 0 && (
-                            <div className="flex justify-end">
-                                <div className="text-lg font-bold">
-                                    Total: ${calculateTotal().toFixed(2)}
+                            <div className="flex justify-end pt-2">
+                                <div className="text-xl font-bold bg-gray-50 px-4 py-2 rounded-lg border">
+                                    Total: PKR {calculateTotal().toLocaleString()}
                                 </div>
                             </div>
                         )}
