@@ -6,7 +6,8 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
 import { ToastProvider } from '@/components/ui/toast'
 import { RoleProvider } from '@/components/providers/RoleProvider'
-import { getUserRole, canAccessRoute, getDefaultRoute } from '@/lib/roleUtils'
+import { getUserRole } from '@/lib/serverRoleUtils'
+import { canAccessRoute, getDefaultRoute } from '@/lib/roleUtils'
 
 interface TenantLayoutProps {
     children: React.ReactNode

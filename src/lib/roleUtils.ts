@@ -1,34 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
-
 export type RoleName = 'Admin' | 'Manager' | 'Cashier' | string
-
-export interface UserRole {
-    roleName: RoleName
-    permissions: string[]
-}
-
-/**
- * Fetch the current user's role name and permissions for a given tenant.
- * Called server-side from the dashboard layout.
- */
-export async function getUserRole(userId: string, tenantId: string): Promise<UserRole> {
-    const supabase = await createClient()
-
-    const { data: employee } = await supabase
-        .from('employees')
-        .select('role_id, roles(name, permissions)')
-        .eq('user_id', userId)
-        .eq('tenant_id', tenantId)
-        .eq('deleted', false)
-        .single()
-
-    const role = employee?.roles as { name: string; permissions: string[] } | null
-
-    return {
-        roleName: role?.name ?? 'Cashier',
-        permissions: role?.permissions ?? [],
-    }
-}
 
 /**
  * Map of which roles can access which route segments.
