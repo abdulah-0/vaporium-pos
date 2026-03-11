@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { Plus, Search, Edit, Trash2, Package } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, Package, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,6 +19,7 @@ import { useToast } from '@/components/ui/toast'
 import { getTenantBySlug } from '@/lib/tenantUtils'
 import { getItems, deleteItem } from '@/lib/services/itemsService'
 import ItemFormDialog from '@/components/features/items/ItemFormDialog'
+import BulkUploadDialog from '@/components/features/items/BulkUploadDialog'
 
 export default function ItemsPage() {
     const params = useParams()
@@ -29,6 +30,7 @@ export default function ItemsPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [showItemDialog, setShowItemDialog] = useState(false)
     const [selectedItem, setSelectedItem] = useState<any>(null)
+    const [showBulkUpload, setShowBulkUpload] = useState(false)
     const { showToast } = useToast()
 
     // Load tenant ID
@@ -103,10 +105,20 @@ export default function ItemsPage() {
                     <h1 className="text-3xl font-bold">Items</h1>
                     <p className="text-gray-500 mt-1">Manage your product catalog</p>
                 </div>
-                <Button onClick={handleAddItem} className="bg-blue-600 hover:bg-blue-700">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Item
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        onClick={() => setShowBulkUpload(true)}
+                        className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                    >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Bulk Upload
+                    </Button>
+                    <Button onClick={handleAddItem} className="bg-blue-600 hover:bg-blue-700">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Item
+                    </Button>
+                </div>
             </div>
 
             {/* Search and Filters */}
@@ -236,6 +248,14 @@ export default function ItemsPage() {
                 item={selectedItem}
                 tenantId={tenantId}
                 onSaved={handleItemSaved}
+            />
+
+            {/* Bulk Upload Dialog */}
+            <BulkUploadDialog
+                open={showBulkUpload}
+                onOpenChange={setShowBulkUpload}
+                tenantId={tenantId}
+                onUploaded={loadItems}
             />
         </div>
     )
