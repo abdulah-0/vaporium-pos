@@ -241,14 +241,3 @@ export default function ReceivingPage() {
         </div>
     )
 }
-
-<ReceivingFormDialog
-    open={showReceivingDialog}
-    onOpenChange={setShowReceivingDialog}
-    tenantId={tenantId}
-    employeeId={employeeId}
-    onSaved={handleReceivingSaved}
-/>
-        </div >
-    )
-}
