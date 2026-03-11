@@ -167,7 +167,8 @@ export async function getEmployees(
             .from('employees')
             .select(`
                 *,
-                person:people(*)
+                person:people(*),
+                role:roles(name)
             `)
             .eq('tenant_id', tenantId)
             .eq('deleted', filters?.deleted ?? false)
@@ -200,7 +201,8 @@ export async function getEmployeeById(employeeId: number): Promise<any> {
             .from('employees')
             .select(`
                 *,
-                person:people(*)
+                person:people(*),
+                role:roles(name)
             `)
             .eq('id', employeeId)
             .single()

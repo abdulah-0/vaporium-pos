@@ -15,6 +15,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/toast'
 import { createEmployee, updateEmployee, EmployeeInput } from '@/lib/services/employeesService'
+import { getRoles, assignRoleToEmployee, type Role } from '@/lib/services/rolesService'
+import { Shield } from 'lucide-react'
 
 interface EmployeeFormDialogProps {
     open: boolean
@@ -32,6 +34,8 @@ export default function EmployeeFormDialog({
     onSaved,
 }: EmployeeFormDialogProps) {
     const [loading, setLoading] = useState(false)
+    const [roles, setRoles] = useState<Role[]>([])
+    const [selectedRoleId, setSelectedRoleId] = useState<number | ''>('')
     const { showToast } = useToast()
 
     const { register, handleSubmit, reset, formState: { errors } } = useForm<EmployeeInput>({
@@ -52,6 +56,13 @@ export default function EmployeeFormDialog({
         },
     })
 
+    // Fetch roles when dialog opens
+    useEffect(() => {
+        if (open && tenantId) {
+            getRoles(tenantId).then(setRoles)
+        }
+    }, [open, tenantId])
+
     useEffect(() => {
         if (employee) {
             reset({
@@ -67,8 +78,9 @@ export default function EmployeeFormDialog({
                     comments: employee.person.comments || '',
                 },
                 username: employee.username,
-                password: '', // Don't pre-fill password for security
+                password: '',
             })
+            setSelectedRoleId(employee.role_id ?? '')
         } else {
             reset({
                 person: {
@@ -85,19 +97,28 @@ export default function EmployeeFormDialog({
                 username: '',
                 password: '',
             })
+            setSelectedRoleId('')
         }
     }, [employee, reset])
 
     const onSubmit = async (data: EmployeeInput) => {
         setLoading(true)
         try {
+            let savedEmployee: any
             if (employee) {
-                await updateEmployee(employee.id, data)
+                savedEmployee = await updateEmployee(employee.id, data)
                 showToast('success', 'Employee updated successfully')
             } else {
-                await createEmployee(data, tenantId)
+                savedEmployee = await createEmployee(data, tenantId)
                 showToast('success', 'Employee created successfully')
             }
+
+            // Assign role if one was selected
+            const empId = savedEmployee?.id ?? employee?.id
+            if (empId && selectedRoleId !== '') {
+                await assignRoleToEmployee(empId, Number(selectedRoleId))
+            }
+
             onSaved()
         } catch (error) {
             console.error('Error saving employee:', error)
@@ -105,6 +126,12 @@ export default function EmployeeFormDialog({
         } finally {
             setLoading(false)
         }
+    }
+
+    const roleColors: Record<string, string> = {
+        Admin: 'text-purple-700 bg-purple-50 border-purple-200',
+        Manager: 'text-blue-700 bg-blue-50 border-blue-200',
+        Cashier: 'text-green-700 bg-green-50 border-green-200',
     }
 
     return (
@@ -115,7 +142,46 @@ export default function EmployeeFormDialog({
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* Role selector — first and most important */}
+                    <div className="space-y-2">
+                        <Label className="flex items-center gap-1.5">
+                            <Shield className="h-3.5 w-3.5 text-purple-500" />
+                            Role <span className="text-red-500">*</span>
+                        </Label>
+                        <div className="flex flex-wrap gap-2">
+                            {roles.length === 0 ? (
+                                <p className="text-sm text-gray-400">Loading roles...</p>
+                            ) : (
+                                roles.map((role) => {
+                                    const isSelected = selectedRoleId === role.id
+                                    const colorClass = roleColors[role.name] ?? 'text-gray-700 bg-gray-50 border-gray-200'
+                                    return (
+                                        <button
+                                            key={role.id}
+                                            type="button"
+                                            onClick={() => setSelectedRoleId(role.id)}
+                                            className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${isSelected
+                                                    ? colorClass + ' ring-2 ring-offset-1 ring-current shadow-sm'
+                                                    : 'text-gray-500 bg-white border-gray-200 hover:border-gray-300'
+                                                }`}
+                                        >
+                                            {role.name}
+                                            {role.description && (
+                                                <span className="ml-1.5 font-normal text-xs opacity-70">
+                                                    — {role.description}
+                                                </span>
+                                            )}
+                                        </button>
+                                    )
+                                })
+                            )}
+                        </div>
+                        {selectedRoleId === '' && (
+                            <p className="text-xs text-amber-500">Please select a role for this employee</p>
+                        )}
+                    </div>
+
+                    <div className="border-t border-gray-100 pt-4 grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label>First Name <span className="text-red-500">*</span></Label>
                             <Input {...register('person.first_name', { required: true })} />
@@ -172,7 +238,7 @@ export default function EmployeeFormDialog({
                                         message: 'Invalid phone number'
                                     }
                                 })}
-                                placeholder="e.g., +1 (555) 123-4567"
+                                placeholder="e.g., +92 300 0000000"
                             />
                             {errors.person?.phone_number && (
                                 <p className="text-sm text-red-500">{errors.person.phone_number.message}</p>
