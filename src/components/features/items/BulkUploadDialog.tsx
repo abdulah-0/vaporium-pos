@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import * as XLSX from 'xlsx'
 import { createClient } from '@/lib/supabase/client'
 import {
     Dialog,
@@ -31,72 +32,45 @@ interface ParsedRow {
     error?: string
 }
 
-const CSV_TEMPLATE_HEADERS = [
-    'name',
-    'category',
-    'item_number',
-    'description',
-    'cost_price',
-    'unit_price',
-    'reorder_level',
-]
-
-const SAMPLE_ROWS = [
-    ['Wireless Mouse', 'Electronics', 'ELEC-001', 'Ergonomic wireless mouse', '12.50', '24.99', '5'],
-    ['Coffee Mug 12oz', 'Kitchen', 'KITCH-002', 'Ceramic coffee mug', '3.00', '8.99', '10'],
-]
-
 function downloadTemplate() {
-    const rows = [CSV_TEMPLATE_HEADERS, ...SAMPLE_ROWS]
-    const csv = rows.map((r) => r.map((v) => `"${v}"`).join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'items_bulk_upload_template.csv'
-    a.click()
-    URL.revokeObjectURL(url)
+    const headers = ['name', 'category', 'item_number', 'description', 'cost_price', 'unit_price', 'reorder_level']
+    const sampleRows = [
+        ['Wireless Mouse', 'Electronics', 'ELEC-001', 'Ergonomic wireless mouse', 12.50, 24.99, 5],
+        ['Coffee Mug 12oz', 'Kitchen', 'KITCH-002', 'Ceramic coffee mug', 3.00, 8.99, 10],
+    ]
+
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows])
+
+    // Style header row width
+    ws['!cols'] = headers.map(() => ({ wch: 20 }))
+
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Items')
+    XLSX.writeFile(wb, 'items_bulk_upload_template.xlsx')
 }
 
-function parseCSV(text: string): ParsedRow[] {
-    const lines = text.trim().split(/\r?\n/)
-    if (lines.length < 2) return []
+function parseExcel(buffer: ArrayBuffer): ParsedRow[] {
+    const wb = XLSX.read(buffer, { type: 'array' })
+    const ws = wb.Sheets[wb.SheetNames[0]]
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: '' })
 
-    // Strip header row
-    const dataLines = lines.slice(1)
-
-    return dataLines.map((line, idx) => {
-        // Handle quoted CSV values
-        const values: string[] = []
-        let current = ''
-        let inQuotes = false
-        for (const char of line) {
-            if (char === '"') {
-                inQuotes = !inQuotes
-            } else if (char === ',' && !inQuotes) {
-                values.push(current.trim())
-                current = ''
-            } else {
-                current += char
-            }
-        }
-        values.push(current.trim())
-
-        const [name, category, item_number, description, cost_price_str, unit_price_str, reorder_level_str] = values
+    return rows.map((row, idx) => {
+        const name = String(row['name'] || '').trim()
+        const category = String(row['category'] || '').trim()
+        const item_number = String(row['item_number'] || '').trim()
+        const description = String(row['description'] || '').trim()
+        const cost_price = parseFloat(String(row['cost_price'] || '0')) || 0
+        const unit_price = parseFloat(String(row['unit_price'] || '0')) || 0
+        const reorder_level = parseInt(String(row['reorder_level'] || '0')) || 0
 
         if (!name) {
-            return { name: '', category: '', item_number: '', description: '', cost_price: 0, unit_price: 0, reorder_level: 0, error: `Row ${idx + 2}: Name is required` }
+            return { name: '', category, item_number, description, cost_price, unit_price, reorder_level, error: `Row ${idx + 2}: Name is required` }
         }
-
-        const cost_price = parseFloat(cost_price_str) || 0
-        const unit_price = parseFloat(unit_price_str) || 0
-        const reorder_level = parseInt(reorder_level_str) || 0
-
         if (unit_price <= 0) {
-            return { name, category, item_number, description, cost_price, unit_price, reorder_level, error: `Row ${idx + 2}: Unit price must be greater than 0` }
+            return { name, category, item_number, description, cost_price, unit_price, reorder_level, error: `Row ${idx + 2}: Unit price must be > 0` }
         }
 
-        return { name, category: category || '', item_number: item_number || '', description: description || '', cost_price, unit_price, reorder_level }
+        return { name, category, item_number, description, cost_price, unit_price, reorder_level }
     })
 }
 
@@ -120,11 +94,11 @@ export default function BulkUploadDialog({ open, onOpenChange, tenantId, onUploa
 
         const reader = new FileReader()
         reader.onload = (ev) => {
-            const text = ev.target?.result as string
-            const rows = parseCSV(text)
+            const buffer = ev.target?.result as ArrayBuffer
+            const rows = parseExcel(buffer)
             setParsedRows(rows)
         }
-        reader.readAsText(file)
+        reader.readAsArrayBuffer(file)
     }
 
     const handleUpload = async () => {
@@ -149,7 +123,6 @@ export default function BulkUploadDialog({ open, onOpenChange, tenantId, onUploa
             }))
 
             const { error } = await supabase.from('items').insert(inserts)
-
             if (error) throw error
 
             setUploadResult({ success: validRows.length, failed: errorRows.length })
@@ -182,7 +155,7 @@ export default function BulkUploadDialog({ open, onOpenChange, tenantId, onUploa
                         Bulk Upload Items
                     </DialogTitle>
                     <DialogDescription>
-                        Upload a CSV file to add multiple items at once. Download the template to get started.
+                        Upload an Excel (.xlsx) file to add multiple items at once. Download the template to get started.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -191,32 +164,32 @@ export default function BulkUploadDialog({ open, onOpenChange, tenantId, onUploa
                     <div className="flex items-center gap-3 p-3 rounded-lg bg-purple-50 border border-purple-100">
                         <FileSpreadsheet className="h-8 w-8 text-purple-400 shrink-0" />
                         <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-700">Step 1: Download the template</p>
+                            <p className="text-sm font-medium text-gray-700">Step 1: Download the Excel template</p>
                             <p className="text-xs text-gray-400">Fill in your items, then upload the file below</p>
                         </div>
                         <Button variant="outline" size="sm" onClick={downloadTemplate} className="shrink-0 text-purple-700 border-purple-200 hover:bg-purple-100">
                             <Download className="h-4 w-4 mr-1.5" />
-                            Template
+                            Template (.xlsx)
                         </Button>
                     </div>
 
                     {/* Step 2: Upload */}
                     <div>
-                        <p className="text-sm font-medium text-gray-700 mb-2">Step 2: Upload your CSV file</p>
+                        <p className="text-sm font-medium text-gray-700 mb-2">Step 2: Upload your Excel file</p>
                         <label
-                            htmlFor="csv-upload"
+                            htmlFor="xlsx-upload"
                             className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-colors"
                         >
-                            <Upload className="h-7 w-7 text-gray-300 mb-1" />
+                            <FileSpreadsheet className="h-7 w-7 text-gray-300 mb-1" />
                             <span className="text-sm text-gray-500">
                                 {fileName ? fileName : 'Click to browse or drag & drop'}
                             </span>
-                            <span className="text-xs text-gray-400">.csv files only</span>
+                            <span className="text-xs text-gray-400">.xlsx files only</span>
                             <input
-                                id="csv-upload"
+                                id="xlsx-upload"
                                 ref={fileRef}
                                 type="file"
-                                accept=".csv"
+                                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                                 className="hidden"
                                 onChange={handleFileChange}
                             />
@@ -227,7 +200,7 @@ export default function BulkUploadDialog({ open, onOpenChange, tenantId, onUploa
                     {parsedRows.length > 0 && !uploadResult && (
                         <div className="rounded-lg border border-gray-100 overflow-hidden">
                             <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-100">
-                                <span className="text-sm font-medium text-gray-700">Preview — {parsedRows.length} row(s) detected</span>
+                                <span className="text-sm font-medium text-gray-700">{parsedRows.length} row(s) detected</span>
                                 <div className="flex items-center gap-3 text-xs">
                                     <span className="text-green-600 font-medium flex items-center gap-1">
                                         <CheckCircle2 className="h-3.5 w-3.5" /> {validRows.length} valid
@@ -258,8 +231,8 @@ export default function BulkUploadDialog({ open, onOpenChange, tenantId, onUploa
                                                 <td className="px-3 py-1.5 text-gray-700 font-medium">{row.unit_price.toFixed(2)}</td>
                                                 <td className="px-3 py-1.5">
                                                     {row.error
-                                                        ? <span className="text-red-500 flex items-center gap-1"><XCircle className="h-3 w-3" />{row.error}</span>
-                                                        : <span className="text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />OK</span>
+                                                        ? <span className="text-red-500 flex items-center gap-1"><XCircle className="h-3 w-3" /> {row.error}</span>
+                                                        : <span className="text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> OK</span>
                                                     }
                                                 </td>
                                             </tr>
@@ -284,7 +257,7 @@ export default function BulkUploadDialog({ open, onOpenChange, tenantId, onUploa
                         </div>
                     )}
 
-                    {/* Action buttons */}
+                    {/* Actions */}
                     <div className="flex justify-end gap-2 pt-2">
                         <Button variant="outline" onClick={() => handleClose(false)} disabled={uploading}>
                             {uploadResult ? 'Close' : 'Cancel'}
