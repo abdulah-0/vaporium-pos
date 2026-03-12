@@ -112,7 +112,7 @@ export default function PaymentDialog({
                     <DialogTitle className="text-2xl">Process Payment</DialogTitle>
                 </DialogHeader>
 
-                <div className="space-y-6">
+                <div className="space-y-6 max-h-[65vh] overflow-y-auto pr-4 -mr-4 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-800">
                     {/* Discount Section */}
                     <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-100 dark:border-gray-800">
                         <Label className="text-sm font-semibold mb-3 block">Apply Discount</Label>
