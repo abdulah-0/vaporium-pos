@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import { Cart, Sale, Payment } from '@/types'
+import { Cart, Sale, Payment, DiscountType } from '@/types'
 import { ensureUniqueInvoiceNumber } from '@/lib/invoiceUtils'
 
 /**
@@ -17,8 +17,8 @@ export async function completeSale(
         // Generate unique invoice number
         const invoiceNumber = await ensureUniqueInvoiceNumber(tenantId)
 
-        // Calculate totals
-        const subtotal = cart.items.reduce((sum, item) => {
+        // Calculate items subtotal
+        const itemsSubtotal = cart.items.reduce((sum, item) => {
             const itemTotal = item.price * item.quantity
             const discount = item.discount_type === 'percent'
                 ? itemTotal * (item.discount / 100)
@@ -26,6 +26,12 @@ export async function completeSale(
             return sum + (itemTotal - discount)
         }, 0)
 
+        // Apply global discount
+        const globalDiscountAmount = cart.discount_type === 'percent'
+            ? itemsSubtotal * (cart.discount / 100)
+            : cart.discount
+        
+        const subtotal = Math.max(0, itemsSubtotal - globalDiscountAmount)
         const tax = subtotal * 0.10 // 10% tax
         const total = subtotal + tax
 
@@ -41,6 +47,8 @@ export async function completeSale(
                 sale_status: 'completed',
                 sale_total: total,
                 tax: tax,
+                discount_amount: globalDiscountAmount,
+                discount_type: cart.discount_type,
                 sale_time: new Date().toISOString(),
             })
             .select()
@@ -157,6 +165,8 @@ export async function suspendSale(
                 sale_status: 'suspended',
                 sale_total: total,
                 tax: tax,
+                discount_amount: cart.discount,
+                discount_type: cart.discount_type,
                 sale_time: new Date().toISOString(),
             })
             .select()
@@ -232,6 +242,8 @@ export async function loadSuspendedSale(saleId: number): Promise<Cart | null> {
             payments: [],
             comment: sale.comment,
             mode: 'sale',
+            discount: sale.discount_amount || 0,
+            discount_type: sale.discount_type as DiscountType || 'percent',
         }
 
         return cart

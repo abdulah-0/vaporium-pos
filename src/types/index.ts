@@ -163,6 +163,8 @@ export interface Sale {
     payments?: SalePayment[]
     customer?: Customer
     employee?: Employee
+    discount_amount?: number
+    discount_type?: DiscountType
     created_at: string
     updated_at: string
 }
@@ -252,6 +254,8 @@ export interface Cart {
     payments: Payment[]
     comment?: string
     mode: SaleType
+    discount: number
+    discount_type: DiscountType
 }
 
 export interface Payment {

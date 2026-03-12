@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { CartItem, Customer, Payment, SaleType } from '@/types'
+import { CartItem, Customer, Payment, SaleType, DiscountType } from '@/types'
 
 interface CartStore {
     items: CartItem[]
@@ -7,6 +7,8 @@ interface CartStore {
     payments: Payment[]
     comment: string
     mode: SaleType
+    discount: number
+    discountType: DiscountType
 
     // Actions
     addItem: (item: CartItem) => void
@@ -17,6 +19,7 @@ interface CartStore {
     addPayment: (payment: Payment) => void
     removePayment: (index: number) => void
     setComment: (comment: string) => void
+    setDiscount: (discount: number, type: DiscountType) => void
     setMode: (mode: SaleType) => void
     clearCart: () => void
 
@@ -34,6 +37,8 @@ export const useCartStore = create<CartStore>((set, get) => ({
     payments: [],
     comment: '',
     mode: 'sale',
+    discount: 0,
+    discountType: 'percent',
 
     addItem: (item) => {
         const items = get().items
@@ -82,6 +87,8 @@ export const useCartStore = create<CartStore>((set, get) => ({
 
     setComment: (comment) => set({ comment }),
 
+    setDiscount: (discount, type) => set({ discount, discountType: type }),
+
     setMode: (mode) => set({ mode }),
 
     clearCart: () => set({
@@ -90,16 +97,24 @@ export const useCartStore = create<CartStore>((set, get) => ({
         payments: [],
         comment: '',
         mode: 'sale',
+        discount: 0,
+        discountType: 'percent',
     }),
 
     getSubtotal: () => {
-        return get().items.reduce((sum, item) => {
+        const itemsSubtotal = get().items.reduce((sum, item) => {
             const itemTotal = item.price * item.quantity
             const discountAmount = item.discount_type === 'percent'
                 ? itemTotal * (item.discount / 100)
                 : item.discount
             return sum + (itemTotal - discountAmount)
         }, 0)
+
+        const globalDiscount = get().discountType === 'percent'
+            ? itemsSubtotal * (get().discount / 100)
+            : get().discount
+
+        return Math.max(0, itemsSubtotal - globalDiscount)
     },
 
     getTax: () => {

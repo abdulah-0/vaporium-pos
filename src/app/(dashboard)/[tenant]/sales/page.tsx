@@ -23,7 +23,7 @@ import CustomerSelectDialog from '@/components/features/sales/CustomerSelectDial
 import { getTenantBySlug, getEmployeeId } from '@/lib/tenantUtils'
 import { completeSale } from '@/lib/services/salesService'
 import { printReceipt } from '@/lib/receiptUtils'
-import { CartItem, Payment } from '@/types'
+import { Cart, CartItem, Sale, Payment, DiscountType } from '@/types'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/components/ui/toast'
 
@@ -51,6 +51,8 @@ export default function SalesPage() {
         getTax,
         getTotal,
         clearCart,
+        discount,
+        discountType,
     } = useCartStore()
 
     useEffect(() => {
@@ -117,7 +119,15 @@ export default function SalesPage() {
     const handleCompletePayment = async (payments: Payment[]) => {
         setProcessing(true)
         try {
-            const cart = { items, customer: customer || undefined, payments, comment: '', mode }
+            const cart: Cart = { 
+                items, 
+                customer: customer || undefined, 
+                payments, 
+                comment: '', 
+                mode,
+                discount,
+                discount_type: discountType
+            }
             const sale = await completeSale(cart, tenantId, employeeId)
             clearCart()
             setShowPaymentDialog(false)
@@ -339,6 +349,12 @@ export default function SalesPage() {
                             <span className="text-gray-500">Tax (10%)</span>
                             <span className="font-medium text-gray-900">Rs. {getTax().toFixed(2)}</span>
                         </div>
+                        {discount > 0 && (
+                            <div className="flex justify-between text-sm text-green-600">
+                                <span>Discount {discountType === 'percent' ? `(${discount}%)` : ''}</span>
+                                <span className="font-medium">-Rs. {(getSubtotal() / (1 - (discountType === 'percent' ? discount / 100 : 0)) * (discountType === 'percent' ? discount / 100 : 0) || discount).toFixed(2)}</span>
+                            </div>
+                        )}
                         <Separator className="bg-gray-100" />
                         <div className="flex justify-between">
                             <span className="font-semibold text-gray-900">Total</span>

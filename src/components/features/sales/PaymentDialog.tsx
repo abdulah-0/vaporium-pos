@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Payment } from '@/types'
+import { useCartStore } from '@/store/cartStore'
 import {
     Dialog,
     DialogContent,
@@ -29,7 +30,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { CreditCard, DollarSign, Gift, Trash2, Plus } from 'lucide-react'
+import { CreditCard, DollarSign, Gift, Trash2, Plus, Percent, Banknote } from 'lucide-react'
 
 interface PaymentDialogProps {
     open: boolean
@@ -52,6 +53,7 @@ export default function PaymentDialog({
     total,
     onComplete,
 }: PaymentDialogProps) {
+    const { discount, discountType, setDiscount } = useCartStore()
     const [payments, setPayments] = useState<Payment[]>([])
     const [paymentType, setPaymentType] = useState('cash')
     const [paymentAmount, setPaymentAmount] = useState('')
@@ -111,6 +113,50 @@ export default function PaymentDialog({
                 </DialogHeader>
 
                 <div className="space-y-6">
+                    {/* Discount Section */}
+                    <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-100 dark:border-gray-800">
+                        <Label className="text-sm font-semibold mb-3 block">Apply Discount</Label>
+                        <div className="flex gap-4">
+                            <div className="flex-1 space-y-2">
+                                <Label htmlFor="discount-type" className="text-xs text-gray-500">Type</Label>
+                                <div className="flex bg-white dark:bg-gray-800 rounded-lg p-1 border">
+                                    <Button
+                                        variant={discountType === 'percent' ? 'default' : 'ghost'}
+                                        size="sm"
+                                        className="flex-1 h-8 text-xs"
+                                        onClick={() => setDiscount(discount, 'percent')}
+                                    >
+                                        <Percent className="h-3 w-3 mr-1" />
+                                        Percentage
+                                    </Button>
+                                    <Button
+                                        variant={discountType === 'fixed' ? 'default' : 'ghost'}
+                                        size="sm"
+                                        className="flex-1 h-8 text-xs"
+                                        onClick={() => setDiscount(discount, 'fixed')}
+                                    >
+                                        <Banknote className="h-3 w-3 mr-1" />
+                                        Cash
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="flex-1 space-y-2">
+                                <Label htmlFor="discount-value" className="text-xs text-gray-500">
+                                    Amount {discountType === 'percent' ? '(%)' : '(Rs.)'}
+                                </Label>
+                                <Input
+                                    id="discount-value"
+                                    type="number"
+                                    min="0"
+                                    placeholder="0.00"
+                                    value={discount || ''}
+                                    onChange={(e) => setDiscount(parseFloat(e.target.value) || 0, discountType)}
+                                    className="h-10"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Total Display */}
                     <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 p-6 rounded-lg">
                         <div className="flex justify-between items-center mb-2">
