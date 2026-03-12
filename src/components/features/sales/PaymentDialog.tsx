@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Payment } from '@/types'
+import { Payment, DiscountType } from '@/types'
 import { useCartStore } from '@/store/cartStore'
 import {
     Dialog,
@@ -59,8 +59,10 @@ export default function PaymentDialog({
     const [paymentAmount, setPaymentAmount] = useState('')
 
     const totalPaid = payments.reduce((sum, p) => sum + p.payment_amount, 0)
-    const remaining = total - totalPaid
-    const changeDue = totalPaid > total ? totalPaid - total : 0
+    const currentInputAmount = parseFloat(paymentAmount) || 0
+    const effectiveTotalPaid = totalPaid + currentInputAmount
+    const effectiveRemaining = total - effectiveTotalPaid
+    const effectiveChangeDue = effectiveTotalPaid > total ? effectiveTotalPaid - total : 0
 
     const handleAddPayment = () => {
         const amount = parseFloat(paymentAmount)
@@ -86,12 +88,23 @@ export default function PaymentDialog({
     }
 
     const handleCompleteSale = () => {
-        if (remaining > 0.01) {
+        let finalPayments = [...payments]
+        
+        // If there's an amount in the input, add it as a final payment if it covers or contributes to the total
+        if (currentInputAmount > 0) {
+            finalPayments.push({
+                payment_type: paymentType,
+                payment_amount: currentInputAmount
+            })
+        }
+
+        const finalTotalPaid = finalPayments.reduce((sum, p) => sum + p.payment_amount, 0)
+        if (total - finalTotalPaid > 0.01) {
             alert('Insufficient payment. Please add more payments.')
             return
         }
 
-        onComplete(payments)
+        onComplete(finalPayments)
         // Reset state
         setPayments([])
         setPaymentAmount('')
@@ -124,7 +137,7 @@ export default function PaymentDialog({
                                         variant={discountType === 'percent' ? 'default' : 'ghost'}
                                         size="sm"
                                         className="flex-1 h-8 text-xs"
-                                        onClick={() => setDiscount(discount, 'percent')}
+                                        onClick={() => setDiscount(discount, 'percent' as DiscountType)}
                                     >
                                         <Percent className="h-3 w-3 mr-1" />
                                         Percentage
@@ -133,7 +146,7 @@ export default function PaymentDialog({
                                         variant={discountType === 'fixed' ? 'default' : 'ghost'}
                                         size="sm"
                                         className="flex-1 h-8 text-xs"
-                                        onClick={() => setDiscount(discount, 'fixed')}
+                                        onClick={() => setDiscount(discount, 'fixed' as DiscountType)}
                                     >
                                         <Banknote className="h-3 w-3 mr-1" />
                                         Cash
@@ -150,7 +163,7 @@ export default function PaymentDialog({
                                     min="0"
                                     placeholder="0.00"
                                     value={discount || ''}
-                                    onChange={(e) => setDiscount(parseFloat(e.target.value) || 0, discountType)}
+                                    onChange={(e) => setDiscount(parseFloat(e.target.value) || 0, discountType as DiscountType)}
                                     className="h-10"
                                 />
                             </div>
@@ -168,18 +181,18 @@ export default function PaymentDialog({
                             <div>
                                 <span className="text-sm text-gray-600 dark:text-gray-400">Total Paid</span>
                                 <div className="text-xl font-semibold text-green-600 dark:text-green-400">
-                                    Rs. {totalPaid.toFixed(2)}
+                                    Rs. {effectiveTotalPaid.toFixed(2)}
                                 </div>
                             </div>
                             <div>
                                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                                    {remaining > 0 ? 'Remaining' : 'Change Due'}
+                                    {effectiveRemaining > 0 ? 'Remaining' : 'Change Due'}
                                 </span>
-                                <div className={`text-xl font-semibold ${remaining > 0
+                                <div className={`text-xl font-semibold ${effectiveRemaining > 0
                                     ? 'text-orange-600 dark:text-orange-400'
                                     : 'text-blue-600 dark:text-blue-400'
                                     }`}>
-                                    Rs. {remaining > 0 ? remaining.toFixed(2) : changeDue.toFixed(2)}
+                                    Rs. {effectiveRemaining > 0 ? effectiveRemaining.toFixed(2) : effectiveChangeDue.toFixed(2)}
                                 </div>
                             </div>
                         </div>
@@ -221,13 +234,11 @@ export default function PaymentDialog({
                                         onChange={(e) => setPaymentAmount(e.target.value)}
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter') {
-                                                handleAddPayment()
+                                                handleCompleteSale()
                                             }
                                         }}
+                                        className="text-lg font-semibold"
                                     />
-                                    <Button onClick={handleAddPayment} size="icon">
-                                        <Plus className="h-4 w-4" />
-                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -251,18 +262,18 @@ export default function PaymentDialog({
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => handleTenderAmount(Math.ceil(remaining))}
+                                    onClick={() => handleTenderAmount(Math.ceil(total - totalPaid))}
                                 >
-                                    Exact
+                                    Exact Balance
                                 </Button>
                             </div>
                         )}
                     </div>
 
-                    {/* Payments List */}
+                    {/* Payments List (Only show recorded partial payments) */}
                     {payments.length > 0 && (
                         <div className="space-y-2">
-                            <Label>Payments Added</Label>
+                            <Label>Recorded Payments</Label>
                             <div className="border rounded-lg">
                                 <Table>
                                     <TableHeader>
@@ -307,11 +318,11 @@ export default function PaymentDialog({
                     </Button>
                     <Button
                         onClick={handleCompleteSale}
-                        disabled={remaining > 0.01}
+                        disabled={effectiveRemaining > 0.01}
                         className="bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:opacity-90"
                         size="lg"
                     >
-                        Complete Sale {changeDue > 0 && `(Change: Rs. ${changeDue.toFixed(2)})`}
+                        Complete Sale {effectiveChangeDue > 0 && `(Change: Rs. ${effectiveChangeDue.toFixed(2)})`}
                     </Button>
                 </DialogFooter>
             </DialogContent>
