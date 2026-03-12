@@ -60,6 +60,7 @@ export default function ReceivingFormDialog({
             reference: '',
             payment_type: '',
             comment: '',
+            total_amount: 0,
             items: [],
         },
     })
@@ -104,6 +105,7 @@ export default function ReceivingFormDialog({
     }
 
     const calculateTotal = () => {
+        if (receivingItems.length === 0) return watch('total_amount') || 0
         return receivingItems.reduce((sum, item) => {
             const itemTotal = item.item_unit_price * item.quantity_purchased
             const discount = itemTotal * (item.discount_percent / 100)
@@ -111,9 +113,17 @@ export default function ReceivingFormDialog({
         }, 0)
     }
 
+    // Update total_amount when items change
+    useEffect(() => {
+        if (receivingItems.length > 0) {
+            const total = calculateTotal()
+            setValue('total_amount', total)
+        }
+    }, [receivingItems, setValue])
+
     const onSubmit = async (data: ReceivingInput) => {
-        if (data.items.length === 0) {
-            showToast('error', 'Please add at least one item')
+        if (data.items.length === 0 && (!data.total_amount || data.total_amount <= 0)) {
+            showToast('error', 'Please add items or enter a total amount')
             return
         }
 
@@ -133,12 +143,13 @@ export default function ReceivingFormDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
+            <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+                <DialogHeader className="p-6 pb-0">
                     <DialogTitle>New Receiving</DialogTitle>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <div className="flex-1 overflow-y-auto p-6 pt-4">
+                    <form id="receiving-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label>Supplier</Label>
@@ -187,6 +198,28 @@ export default function ReceivingFormDialog({
                         <div className="space-y-2">
                             <Label>Comment</Label>
                             <Input {...register('comment')} placeholder="Optional notes" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Total Amount (Manual)</Label>
+                            <div className="relative">
+                                <div className="absolute left-3 top-2.5 text-gray-500">PKR</div>
+                                <Input
+                                    type="number"
+                                    step="0.01"
+                                    className="pl-12"
+                                    {...register('total_amount', { valueAsNumber: true })}
+                                    disabled={receivingItems.length > 0}
+                                    placeholder="0.00"
+                                />
+                            </div>
+                            {receivingItems.length > 0 && (
+                                <p className="text-xs text-blue-600 italic">
+                                    Locked: Calculated from items below
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -317,30 +350,23 @@ export default function ReceivingFormDialog({
                                 </Table>
                             </div>
                         )}
-
-                        {fields.length > 0 && (
-                            <div className="flex justify-end pt-2">
-                                <div className="text-xl font-bold bg-gray-50 px-4 py-2 rounded-lg border">
-                                    Total: PKR {calculateTotal().toLocaleString()}
-                                </div>
-                            </div>
-                        )}
                     </div>
-
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            disabled={loading}
-                        >
-                            Cancel
-                        </Button>
-                        <Button type="submit" disabled={loading}>
-                            {loading ? 'Creating...' : 'Create Receiving'}
-                        </Button>
-                    </DialogFooter>
                 </form>
+                </div>
+
+                <DialogFooter className="p-6 border-t bg-gray-50">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        disabled={loading}
+                    >
+                        Cancel
+                    </Button>
+                    <Button type="submit" form="receiving-form" disabled={loading}>
+                        {loading ? 'Creating...' : 'Create Receiving'}
+                    </Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     )

@@ -151,7 +151,7 @@ export default function ReceivingPage() {
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-right font-bold text-blue-700">
-                                                    PKR {calculateTotal(receiving).toLocaleString()}
+                                                    PKR {(receiving.total_amount || 0).toLocaleString()}
                                                 </TableCell>
                                                 <TableCell>
                                                     {receiving.payment_type ? (

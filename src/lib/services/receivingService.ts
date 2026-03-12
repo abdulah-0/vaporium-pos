@@ -5,6 +5,7 @@ export interface ReceivingInput {
     reference?: string
     payment_type?: string
     comment?: string
+    total_amount?: number
     items: ReceivingItemInput[]
 }
 
@@ -39,6 +40,7 @@ export async function createReceiving(
                 comment: receiving.comment || '',
                 payment_type: receiving.payment_type,
                 reference: receiving.reference,
+                total_amount: receiving.total_amount || 0,
                 receiving_time: new Date().toISOString(),
             })
             .select()

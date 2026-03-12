@@ -211,6 +211,7 @@ export interface Receiving {
     comment: string
     payment_type?: string
     reference?: string
+    total_amount: number
     created_at: string
     updated_at: string
 }
