@@ -29,6 +29,9 @@ export default function ItemsPage() {
     const [items, setItems] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
+    const [currentPage, setCurrentPage] = useState(1)
+    const [pageSize] = useState(25)
+    const [totalItems, setTotalItems] = useState(0)
     const [showItemDialog, setShowItemDialog] = useState(false)
     const [selectedItem, setSelectedItem] = useState<any>(null)
     const [showBulkUpload, setShowBulkUpload] = useState(false)
@@ -50,15 +53,24 @@ export default function ItemsPage() {
         if (tenantId) {
             loadItems()
         }
-    }, [tenantId, searchQuery])
+    }, [tenantId, searchQuery, currentPage])
+
+    // Reset to page 1 on search
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [searchQuery])
 
     const loadItems = async () => {
         setLoading(true)
         try {
-            const data = await getItems(tenantId, {
+            const { data, count } = await getItems(tenantId, {
                 search: searchQuery || undefined,
+                paginated: true,
+                page: currentPage,
+                pageSize: pageSize
             })
             setItems(data)
+            setTotalItems(count)
         } catch (error) {
             console.error('Error loading items:', error)
             showToast('error', 'Failed to load items')
@@ -97,6 +109,8 @@ export default function ItemsPage() {
         setSelectedItem(null)
         loadItems()
     }
+
+    const totalPages = Math.ceil(totalItems / pageSize)
 
     return (
         <ClientRoleGuard routeSegment="items" tenantSlug={tenantSlug}>
@@ -143,9 +157,16 @@ export default function ItemsPage() {
                 {/* Items Table */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Package className="h-5 w-5" />
-                            Items ({items.length})
+                        <CardTitle className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Package className="h-5 w-5" />
+                                Items ({totalItems})
+                            </div>
+                            {totalItems > 0 && (
+                                <div className="text-sm font-normal text-gray-500">
+                                    Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, totalItems)} of {totalItems}
+                                </div>
+                            )}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -162,83 +183,112 @@ export default function ItemsPage() {
                                 </p>
                             </div>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Item #</TableHead>
-                                            <TableHead>Name</TableHead>
-                                            <TableHead>Category</TableHead>
-                                            <TableHead className="text-right">Cost Price</TableHead>
-                                            <TableHead className="text-right">Unit Price</TableHead>
-                                            <TableHead className="text-right">Stock</TableHead>
-                                            <TableHead className="text-right">Actions</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {items.map((item) => (
-                                            <TableRow key={item.id}>
-                                                <TableCell className="font-mono text-sm">
-                                                    {item.item_number}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div>
-                                                        <div className="font-medium">{item.name}</div>
-                                                        {item.description && (
-                                                            <div className="text-sm text-gray-500 truncate max-w-xs">
-                                                                {item.description}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    {item.category ? (
-                                                        <Badge variant="outline">{item.category}</Badge>
-                                                    ) : (
-                                                        <span className="text-gray-400">-</span>
-                                                    )}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    PKR {item.cost_price.toFixed(2)}
-                                                </TableCell>
-                                                <TableCell className="text-right font-medium">
-                                                    PKR {item.unit_price.toFixed(2)}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        <span className={item.is_low_stock ? 'text-red-600 font-medium' : ''}>
-                                                            {item.stock_quantity}
-                                                        </span>
-                                                        {item.is_low_stock && (
-                                                            <Badge variant="destructive" className="text-xs">
-                                                                Low
-                                                            </Badge>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => handleEditItem(item)}
-                                                        >
-                                                            <Edit className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => handleDeleteItem(item)}
-                                                        >
-                                                            <Trash2 className="h-4 w-4 text-red-600" />
-                                                        </Button>
-                                                    </div>
-                                                </TableCell>
+                            <>
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Item #</TableHead>
+                                                <TableHead>Name</TableHead>
+                                                <TableHead>Category</TableHead>
+                                                <TableHead className="text-right">Cost Price</TableHead>
+                                                <TableHead className="text-right">Unit Price</TableHead>
+                                                <TableHead className="text-right">Stock</TableHead>
+                                                <TableHead className="text-right">Actions</TableHead>
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </div>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {items.map((item) => (
+                                                <TableRow key={item.id}>
+                                                    <TableCell className="font-mono text-sm">
+                                                        {item.item_number}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div>
+                                                            <div className="font-medium">{item.name}</div>
+                                                            {item.description && (
+                                                                <div className="text-sm text-gray-500 truncate max-w-xs">
+                                                                    {item.description}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {item.category ? (
+                                                            <Badge variant="outline">{item.category}</Badge>
+                                                        ) : (
+                                                            <span className="text-gray-400">-</span>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        PKR {item.cost_price.toFixed(2)}
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-medium">
+                                                        PKR {item.unit_price.toFixed(2)}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <span className={item.is_low_stock ? 'text-red-600 font-medium' : ''}>
+                                                                {item.stock_quantity}
+                                                            </span>
+                                                            {item.is_low_stock && (
+                                                                <Badge variant="destructive" className="text-xs">
+                                                                    Low
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => handleEditItem(item)}
+                                                            >
+                                                                <Edit className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => handleDeleteItem(item)}
+                                                            >
+                                                                <Trash2 className="h-4 w-4 text-red-600" />
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+
+                                {/* Pagination Controls */}
+                                {totalPages > 1 && (
+                                    <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                                        <div className="text-sm text-gray-500">
+                                            Page {currentPage} of {totalPages}
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                                disabled={currentPage === 1}
+                                            >
+                                                Previous
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                                disabled={currentPage === totalPages}
+                                            >
+                                                Next
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </CardContent>
                 </Card>

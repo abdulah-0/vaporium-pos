@@ -28,6 +28,9 @@ export interface ItemFilters {
     category?: string
     supplier_id?: number
     low_stock?: boolean
+    page?: number
+    pageSize?: number
+    paginated?: boolean
 }
 
 /**
@@ -195,13 +198,13 @@ export async function deleteItem(itemId: number): Promise<void> {
 /**
  * Get items with filters
  */
-export async function getItems(tenantId: string, filters?: ItemFilters): Promise<any[]> {
+export async function getItems(tenantId: string, filters?: ItemFilters): Promise<any> {
     const supabase = createClient()
 
     try {
         let query = supabase
             .from('items')
-            .select('*')
+            .select('*', { count: filters?.paginated ? 'exact' : undefined })
             .eq('tenant_id', tenantId)
             .eq('deleted', false)
             .order('name')
@@ -219,7 +222,14 @@ export async function getItems(tenantId: string, filters?: ItemFilters): Promise
             query = query.eq('supplier_id', filters.supplier_id)
         }
 
-        const { data, error } = await query
+        // Apply pagination
+        if (filters?.paginated && filters.page !== undefined && filters.pageSize !== undefined) {
+            const from = (filters.page - 1) * filters.pageSize
+            const to = from + filters.pageSize - 1
+            query = query.range(from, to)
+        }
+
+        const { data, error, count } = await query
 
         if (error) throw error
 
@@ -254,12 +264,21 @@ export async function getItems(tenantId: string, filters?: ItemFilters): Promise
             }
         }))
 
+        let finalItems = itemsWithStock
+
         // Filter by low stock if requested
         if (filters?.low_stock) {
-            return itemsWithStock.filter(item => item.is_low_stock)
+            finalItems = itemsWithStock.filter(item => item.is_low_stock)
         }
 
-        return itemsWithStock
+        if (filters?.paginated) {
+            return {
+                data: finalItems,
+                count: count || 0
+            }
+        }
+
+        return finalItems
     } catch (error) {
         console.error('Error getting items:', error)
         throw error
