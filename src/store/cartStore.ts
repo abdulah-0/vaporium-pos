@@ -25,7 +25,6 @@ interface CartStore {
 
     // Computed
     getSubtotal: () => number
-    getTax: () => number
     getTotal: () => number
     getTotalPaid: () => number
     getBalance: () => number
@@ -117,16 +116,8 @@ export const useCartStore = create<CartStore>((set, get) => ({
         return Math.max(0, itemsSubtotal - globalDiscount)
     },
 
-    getTax: () => {
-        const customer = get().customer
-        if (customer && !customer.taxable) return 0
-
-        // Simple 10% tax for now - can be made configurable
-        return get().getSubtotal() * 0.10
-    },
-
     getTotal: () => {
-        return get().getSubtotal() + get().getTax()
+        return get().getSubtotal()
     },
 
     getTotalPaid: () => {

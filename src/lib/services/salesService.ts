@@ -32,8 +32,7 @@ export async function completeSale(
             : cart.discount
         
         const subtotal = Math.max(0, itemsSubtotal - globalDiscountAmount)
-        const tax = subtotal * 0.10 // 10% tax
-        const total = subtotal + tax
+        const total = subtotal
 
         // Create sale record
         const { data: sale, error: saleError } = await supabase
@@ -46,7 +45,7 @@ export async function completeSale(
                 invoice_number: invoiceNumber,
                 sale_status: 'completed',
                 sale_total: total,
-                tax: tax,
+                tax: 0,
                 discount_amount: globalDiscountAmount,
                 discount_type: cart.discount_type,
                 sale_time: new Date().toISOString(),
@@ -151,8 +150,7 @@ export async function suspendSale(
             return sum + (itemTotal - discount)
         }, 0)
 
-        const tax = subtotal * 0.10
-        const total = subtotal + tax
+        const total = subtotal
 
         // Create sale record with suspended status
         const { data: sale, error: saleError } = await supabase
@@ -164,7 +162,7 @@ export async function suspendSale(
                 comment: cart.comment || 'SUSPENDED',
                 sale_status: 'suspended',
                 sale_total: total,
-                tax: tax,
+                tax: 0,
                 discount_amount: cart.discount,
                 discount_type: cart.discount_type,
                 sale_time: new Date().toISOString(),

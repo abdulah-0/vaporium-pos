@@ -49,8 +49,6 @@ export default function CustomerFormDialog({
                 comments: '',
             },
             company_name: '',
-            taxable: true,
-            tax_id: '',
             discount_percent: 0,
         },
     })
@@ -70,8 +68,6 @@ export default function CustomerFormDialog({
                     comments: customer.person.comments || '',
                 },
                 company_name: customer.company_name || '',
-                taxable: customer.taxable,
-                tax_id: customer.tax_id || '',
                 discount_percent: customer.discount_percent || 0,
             })
         } else {
@@ -88,8 +84,6 @@ export default function CustomerFormDialog({
                     comments: '',
                 },
                 company_name: '',
-                taxable: true,
-                tax_id: '',
                 discount_percent: 0,
             })
         }
@@ -191,27 +185,11 @@ export default function CustomerFormDialog({
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label>Tax ID</Label>
-                            <Input {...register('tax_id')} placeholder="Optional" />
-                        </div>
                         <div className="space-y-2">
                             <Label>Discount %</Label>
                             <Input type="number" step="0.01" {...register('discount_percent', { valueAsNumber: true })} />
                         </div>
-                    </div>
 
-                    <div className="flex items-center space-x-2">
-                        <Checkbox
-                            id="taxable"
-                            checked={watch('taxable')}
-                            onCheckedChange={(checked) => setValue('taxable', !!checked)}
-                        />
-                        <Label htmlFor="taxable" className="cursor-pointer">
-                            Taxable (uncheck for tax-exempt customers)
-                        </Label>
-                    </div>
 
                     <div className="space-y-2">
                         <Label>Comments</Label>

@@ -148,12 +148,11 @@ export async function getTaxSummary(
 
         if (error) throw error
 
-        const totalTaxCollected = sales?.reduce((sum, s) => sum + parseFloat(s.tax || 0), 0) || 0
+        const totalTaxCollected = 0
         const totalSales = sales?.reduce((sum, s) => sum + parseFloat(s.sale_total || 0), 0) || 0
-        const taxableSales = sales?.filter(s => parseFloat(s.tax || 0) > 0)
-            .reduce((sum, s) => sum + parseFloat(s.sale_total || 0), 0) || 0
-        const nonTaxableSales = totalSales - taxableSales
-        const averageTaxRate = taxableSales > 0 ? (totalTaxCollected / taxableSales) * 100 : 0
+        const taxableSales = 0
+        const nonTaxableSales = totalSales
+        const averageTaxRate = 0
 
         return {
             totalTaxCollected,

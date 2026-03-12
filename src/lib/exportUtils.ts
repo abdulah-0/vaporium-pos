@@ -186,8 +186,6 @@ export function exportSalesToCSV(sales: any[], filename: string): void {
         'Date',
         'Customer',
         'Items Count',
-        'Subtotal',
-        'Tax',
         'Total',
         'Status',
         'Employee'
@@ -203,15 +201,11 @@ export function exportSalesToCSV(sales: any[], filename: string): void {
             ? `${sale.employee.person?.first_name || ''} ${sale.employee.person?.last_name || ''}`.trim()
             : 'N/A'
 
-        const subtotal = sale.sale_total - (sale.tax || 0)
-
         return [
             sale.invoice_number || '',
             new Date(sale.sale_time).toLocaleString(),
             customerName,
             sale.items?.length || 0,
-            subtotal.toFixed(2),
-            (sale.tax || 0).toFixed(2),
             sale.sale_total.toFixed(2),
             sale.sale_status || '',
             employeeName
@@ -242,8 +236,6 @@ export function exportSalesToCSV(sales: any[], filename: string): void {
  */
 export function exportSalesToPDF(sales: any[], filename: string): void {
     const totalSales = sales.reduce((sum, sale) => sum + sale.sale_total, 0)
-    const totalTax = sales.reduce((sum, sale) => sum + (sale.tax || 0), 0)
-    const totalSubtotal = totalSales - totalTax
 
     const html = `
         <!DOCTYPE html>
@@ -360,14 +352,6 @@ export function exportSalesToPDF(sales: any[], filename: string): void {
             </table>
 
             <div class="summary">
-                <div class="summary-row">
-                    <span>Subtotal:</span>
-                    <span>Rs. ${totalSubtotal.toFixed(2)}</span>
-                </div>
-                <div class="summary-row">
-                    <span>Tax:</span>
-                    <span>Rs. ${totalTax.toFixed(2)}</span>
-                </div>
                 <div class="summary-row total">
                     <span>TOTAL:</span>
                     <span>Rs. ${totalSales.toFixed(2)}</span>

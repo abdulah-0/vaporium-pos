@@ -57,13 +57,7 @@ export function generateReceiptHTML(sale: Sale, companyInfo: CompanyInfo): strin
         return sum + (itemTotal - discount)
     }, 0) || 0
 
-    const tax = sale.items?.reduce((sum, item) => {
-        const itemTotal = item.item_unit_price * item.quantity_purchased
-        const discount = itemTotal * (item.discount_percent / 100)
-        return sum + ((itemTotal - discount) * 0.10) // 10% tax
-    }, 0) || 0
-
-    const total = subtotal + tax
+    const total = subtotal
 
     const totalPaid = sale.payments?.reduce((sum, p) => sum + p.payment_amount, 0) || 0
     const change = totalPaid - total
@@ -206,10 +200,6 @@ export function generateReceiptHTML(sale: Sale, companyInfo: CompanyInfo): strin
                 <div class="total-line">
                     <span>Subtotal:</span>
                     <span>$${subtotal.toFixed(2)}</span>
-                </div>
-                <div class="total-line">
-                    <span>Tax (10%):</span>
-                    <span>$${tax.toFixed(2)}</span>
                 </div>
                 <div class="total-line grand-total">
                     <span>TOTAL:</span>

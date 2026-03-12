@@ -285,7 +285,7 @@ export async function getHourlySalesAnalysis(
 function calculateSalesReport(sales: any[]): SalesReport {
     const totalSales = sales.length
     const totalRevenue = sales.reduce((sum, s) => sum + parseFloat(s.sale_total || 0), 0)
-    const totalTax = sales.reduce((sum, s) => sum + parseFloat(s.tax || 0), 0)
+    const totalTax = 0
     const totalDiscount = sales.reduce((sum, s) => {
         const saleDiscount = s.sales_items?.reduce((itemSum: number, item: any) => {
             const itemTotal = item.quantity * item.item_unit_price

@@ -48,7 +48,6 @@ export default function SalesPage() {
         removeItem,
         updateQuantity,
         getSubtotal,
-        getTax,
         getTotal,
         clearCart,
         discount,
@@ -344,10 +343,6 @@ export default function SalesPage() {
                         <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Subtotal</span>
                             <span className="font-medium text-gray-900">Rs. {getSubtotal().toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Tax (10%)</span>
-                            <span className="font-medium text-gray-900">Rs. {getTax().toFixed(2)}</span>
                         </div>
                         {discount > 0 && (
                             <div className="flex justify-between text-sm text-green-600">

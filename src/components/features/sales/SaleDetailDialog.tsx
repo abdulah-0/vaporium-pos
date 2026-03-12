@@ -31,7 +31,7 @@ export default function SaleDetailDialog({
         }
     }
 
-    const subtotal = sale.sale_total - (sale.tax || 0)
+    const subtotal = sale.sale_total
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -161,10 +161,6 @@ export default function SaleDetailDialog({
                         <div className="flex justify-between">
                             <span className="text-gray-600">Subtotal</span>
                             <span className="font-medium">{formatCurrency(subtotal)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">Tax (10%)</span>
-                            <span className="font-medium">{formatCurrency(sale.tax || 0)}</span>
                         </div>
                         <Separator />
                         <div className="flex justify-between text-lg">

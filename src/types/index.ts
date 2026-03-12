@@ -82,7 +82,7 @@ export interface Customer {
     person_id: number
     company_name?: string
     account_number?: string
-    taxable: boolean
+    taxable: boolean // DEPRECATED - removed from UI and logic
     discount_percent: number
     deleted: boolean
     person?: Person
