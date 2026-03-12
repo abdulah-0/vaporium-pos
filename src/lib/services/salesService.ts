@@ -87,6 +87,38 @@ export async function completeSale(
 
         if (paymentsError) throw paymentsError
 
+        // Create Customer Ledger Entry
+        if (cart.customer?.id) {
+            // 1. Record the sale as a credit (amount customer owes)
+            await supabase.from('customer_ledger_entries').insert({
+                tenant_id: tenantId,
+                customer_id: cart.customer.id,
+                transaction_type: 'credit',
+                amount: total,
+                description: `Sale Invoice #${invoiceNumber}`,
+                reference_id: sale.id,
+                reference_type: 'sale',
+                transaction_time: new Date().toISOString()
+            })
+
+            // 2. Record each payment made
+            for (const payment of cart.payments) {
+                if (payment.payment_amount > 0) {
+                    await supabase.from('customer_ledger_entries').insert({
+                        tenant_id: tenantId,
+                        customer_id: cart.customer.id,
+                        transaction_type: 'payment',
+                        amount: payment.payment_amount,
+                        description: `Payment for Sale Invoice #${invoiceNumber}`,
+                        payment_method: payment.payment_type,
+                        reference_id: sale.id,
+                        reference_type: 'sale',
+                        transaction_time: new Date().toISOString()
+                    })
+                }
+            }
+        }
+
         // Update inventory quantities
         for (const item of cart.items) {
             // Get current inventory

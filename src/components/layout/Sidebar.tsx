@@ -17,6 +17,8 @@ import {
     FileText,
     Zap,
     Settings2,
+    BookOpen,
+    Wallet,
 } from 'lucide-react'
 import type { RoleName } from '@/lib/roleUtils'
 
@@ -49,6 +51,10 @@ export function Sidebar({ tenantSlug, roleName = 'Cashier' }: SidebarProps) {
         { name: 'Suppliers', href: `${baseUrl}/suppliers`, icon: Truck, group: 'people', roles: ['Admin'] },
         { name: 'Employees', href: `${baseUrl}/employees`, icon: UserCog, group: 'people', roles: ['Admin'] },
         { name: 'Reports', href: `${baseUrl}/reports`, icon: BarChart3, group: 'reports', roles: ['Admin', 'Manager'] },
+        { name: 'Supplier Ledger', href: `${baseUrl}/ledgers/supplier`, icon: BookOpen, group: 'finance', roles: ['Admin', 'Manager'] },
+        { name: 'Customer Ledger', href: `${baseUrl}/ledgers/customer`, icon: BookOpen, group: 'finance', roles: ['Admin', 'Manager', 'Cashier'] },
+        { name: 'Expenses', href: `${baseUrl}/expenses`, icon: Wallet, group: 'finance', roles: ['Admin', 'Manager'] },
+        { name: 'Financial Summary', href: `${baseUrl}/ledgers/summary`, icon: BarChart3, group: 'finance', roles: ['Admin'] },
         { name: 'Settings', href: `${baseUrl}/settings`, icon: Settings2, group: 'reports', roles: ['Admin'] },
     ]
 
@@ -56,6 +62,7 @@ export function Sidebar({ tenantSlug, roleName = 'Cashier' }: SidebarProps) {
         { key: 'main', label: 'Sales' },
         { key: 'inventory', label: 'Inventory' },
         { key: 'people', label: 'People' },
+        { key: 'finance', label: 'Finance' },
         { key: 'reports', label: 'Analytics' },
     ]
 

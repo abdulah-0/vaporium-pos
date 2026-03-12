@@ -48,6 +48,38 @@ export async function createReceiving(
 
         if (receivingError) throw receivingError
 
+        // Create Supplier Ledger Entry
+        if (receiving.supplier_id) {
+            const totalAmount = receiving.total_amount || 0
+            
+            // 1. Record the debt (Credit)
+            await supabase.from('supplier_ledger_entries').insert({
+                tenant_id: tenantId,
+                supplier_id: receiving.supplier_id,
+                transaction_type: 'credit',
+                amount: totalAmount,
+                description: `Stock Receiving #${receivingRecord.id}${receiving.reference ? ` (Ref: ${receiving.reference})` : ''}`,
+                reference_id: receivingRecord.id,
+                reference_type: 'receiving',
+                transaction_time: new Date().toISOString()
+            })
+
+            // 2. If it was already paid (Cash/Card/Check), record the payment entry to clear balance
+            if (receiving.payment_type && receiving.payment_type !== 'credit') {
+                await supabase.from('supplier_ledger_entries').insert({
+                    tenant_id: tenantId,
+                    supplier_id: receiving.supplier_id,
+                    transaction_type: 'payment',
+                    amount: totalAmount,
+                    description: `Payment for Receiving #${receivingRecord.id}`,
+                    payment_method: receiving.payment_type,
+                    reference_id: receivingRecord.id,
+                    reference_type: 'receiving',
+                    transaction_time: new Date().toISOString()
+                })
+            }
+        }
+
         // Create receiving items
         const receivingItems = receiving.items.map((item, index) => ({
             receiving_id: receivingRecord.id,
