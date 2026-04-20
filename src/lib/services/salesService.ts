@@ -127,7 +127,7 @@ export async function completeSale(
                 .select('quantity')
                 .eq('item_id', item.item_id)
                 .eq('location_id', item.item_location)
-                .single()
+                .maybeSingle()
 
             if (currentInv) {
                 // Update inventory
